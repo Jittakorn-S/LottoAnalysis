@@ -1,9 +1,8 @@
 # ---- Builder Stage ----
-# Use the latest stable Rust image to ensure all dependencies are supported.
-FROM rust:1.80-slim-bookworm AS builder
+FROM rust:1.81-slim-bookworm AS builder
 
-# Install build dependencies required for native libraries like OpenSSL.
-RUN apt-get update && apt-get install -y \
+# Install build dependencies with minimal extra packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     libssl-dev \
     pkg-config \
@@ -11,50 +10,45 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /usr/src/app
 
-# Copy dependency definitions first to leverage Docker's layer caching.
-# This step is only re-run if Cargo.toml or Cargo.lock change.
+# Copy only dependency manifests first to cache builds
 COPY Cargo.toml Cargo.lock ./
 
-# Build dependencies separately to cache them.
-# This dummy build compiles dependencies without the full source code.
-RUN mkdir src && \
-    echo "fn main() {}" > src/main.rs && \
-    cargo build --release && \
-    rm -rf src target/release/deps/lotto_analysis_rust*
+# Create a dummy main.rs to cache dependencies
+RUN mkdir src && echo "fn main() {}" > src/main.rs
+RUN cargo build --release && rm -r src
 
-# Now, copy the actual source code.
+# Copy actual source code
 COPY src ./src
 
-# Build the final application. This will be much faster as dependencies are cached.
+# Build application
 RUN cargo build --release
 
 # ---- Final Stage ----
-# Use a minimal Debian image for a small and secure final container.
 FROM debian:bookworm-slim
 
-# Install only necessary runtime dependencies. `ca-certificates` is crucial for making HTTPS requests.
-RUN apt-get update && apt-get install -y \
+# Install runtime-only dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user 'app' for enhanced security.
+# Create non-root user for security
 RUN groupadd --system app && useradd --system --gid app app
 
 WORKDIR /home/app
 
-# Copy frontend assets and set ownership to the 'app' user.
+# Copy assets and set proper ownership
 COPY --chown=app:app templates ./templates
 COPY --chown=app:app static ./static
 
-# Copy the compiled binary from the builder stage and set ownership.
+# Copy compiled binary and set permissions
 COPY --from=builder /usr/src/app/target/release/lotto_analysis_rust .
 RUN chown app:app lotto_analysis_rust
 
-# Switch to the non-root user.
+# Run as non-root user
 USER app
 
-# Expose the port the application will run on.
+# Expose application port
 EXPOSE 8080
 
-# Set the command to run the application.
-CMD ["./lotto_analysis_rust"]
+# Run the application
+ENTRYPOINT ["./lotto_analysis_rust"]
