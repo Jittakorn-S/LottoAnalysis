@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI วิเคราะห์และทำนายผลสลากกินแบ่งรัฐบาล</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="icon-container">
+                <span class="icon">🤖</span>
+            </div>
+            <h1>AI วิเคราะห์สลากกินแบ่ง</h1>
+            <p class="subtitle">ใช้พลังของ AI เพื่อวิเคราะห์ข้อมูลสลากและสร้างคำทำนายสำหรับสลากไทยและลาว</p>
+        </header>
+
+        <main>
+            <section class="card">
+                <div class="card-header">
+                    <span class="step-badge">1</span>
+                    <h2>ดึงข้อมูลสลาก</h2>
+                </div>
+                <p>เริ่มต้นด้วยการดึงผลสลากล่าสุดจากเว็บ ข้อมูลที่สดใหม่นี้มีความสำคัญต่อการวิเคราะห์และการทำนายที่แม่นยำของ AI</p>
+
+                <div class="form-grid scrape-controls">
+                     <div class="form-group">
+                        <label for="lotto-type-select">เลือกประเภทสลาก</label>
+                        <select id="lotto-type-select">
+                            <option value="thai">🇹🇭 สลากไทย</option>
+                            <option value="laos">🇱🇦 สลากลาว</option>
+                        </select>
+                    </div>
+                    <button id="scrape-btn" class="btn btn-primary">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+                        <span>เริ่มดึงข้อมูล</span>
+                    </button>
+                </div>
+
+                <div id="progress-container"></div>
+                <div id="table-container">
+                    <table>
+                        <thead id="results-head"></thead>
+                        <tbody id="results-body"></tbody>
+                    </table>
+                </div>
+            </section>
+            
+            <section class="card" id="analysis-section">
+                 <div class="card-header">
+                    <span class="step-badge">2</span>
+                    <h2>วิเคราะห์และทำนายผล</h2>
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="analysis-method-select">เลือกโมเดล AI</label>
+                        <select id="analysis-method-select">
+                            <option value="comprehensive_statistics">📈 สถิติครอบคลุม</option>
+                            <option value="numerology">✨ ศาสตร์แห่งตัวเลข (Digital Root)</option>
+                            <option value="ml_decision_tree">🤖 แมชชีนเลิร์นนิง (Decision Tree)</option>
+                            <option value="markov_chain">🔗 การวิเคราะห์แบบมาร์คอฟเชน</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>เป้าหมายการทำนาย</label>
+                        <div class="radio-group" id="prediction-type-group">
+                            </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="number-input">ชุดตัวเลขย้อนหลัง (แก้ไขหรือเพิ่มของคุณเอง)</label>
+                    <textarea id="number-input" placeholder="เช่น 123456, 987654, 112233" rows="4"></textarea>
+                </div>
+
+                <button id="analyze-btn" class="btn btn-secondary">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>
+                    <span>เริ่มการวิเคราะห์</span>
+                </button>
+                 <div id="analysis-results-container"></div>
+            </section>
+        </main>
+        <footer>
+            <p>ขับเคลื่อนโดย Rust, Actix และพลังเวทมนตร์ของ AI ✨</p>
+        </footer>
+    </div>
+    <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: ai-lotto-analysis-rust
+    env: docker
+    repo: https://github.com/Jittakorn-S/LottoAnalysis
+    healthCheckPath: /
+    region: singapore
+    plan: free
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: 8080
