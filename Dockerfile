@@ -1,6 +1,6 @@
 # ---- Builder Stage ----
-# Use the latest stable Rust version (1.80) to ensure dependency compatibility.
-FROM rust:1.80-slim-bookworm AS builder
+# Use Rust 1.82, as required by the 'icu' dependencies.
+FROM rust:1.82-slim-bookworm AS builder
 
 # Install build dependencies with minimal extras to reduce image size.
 RUN apt-get update && apt-get install -y --no-install-recommends \
