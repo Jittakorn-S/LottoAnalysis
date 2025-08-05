@@ -1,6 +1,6 @@
 # ---- Builder Stage ----
-# Use a specific, slim Rust image for a consistent and smaller build environment.
-FROM rust:1.79-slim-bookworm AS builder
+# Use the latest stable Rust image to ensure all dependencies are supported.
+FROM rust:1.80-slim-bookworm AS builder
 
 # Install build dependencies required for native libraries like OpenSSL.
 RUN apt-get update && apt-get install -y \
