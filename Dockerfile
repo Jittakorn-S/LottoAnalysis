@@ -17,7 +17,7 @@ COPY src ./src
 RUN cargo fetch
 
 # Build release binary
-RUN cargo build --release
+RUN cargo run --release
 
 # Optional: reduce binary size
 RUN strip target/release/lotto_analysis_rust || true
