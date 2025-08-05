@@ -1,5 +1,5 @@
 # ---- Builder Stage ----
-FROM rust:1.81-slim-bookworm AS builder
+FROM rust:1.76-slim-bookworm AS builder
 
 # Install build dependencies with minimal extra packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
