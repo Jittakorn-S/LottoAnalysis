@@ -202,11 +202,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function displayAnalysisResults(data) {
         const { statistical_summary, pattern_analysis, prediction_output, detailed_explanation } = data;
         
+        // Helper function to create a list block, now handles both objects and arrays
         const createListHtml = (title, dataObj) => {
             if (!dataObj || Object.keys(dataObj).length === 0) return '';
-            const items = Object.entries(dataObj)
-                .map(([key, value]) => `<li><strong>${key}:</strong> ${Array.isArray(value) ? value.join(', ') : JSON.stringify(value).replace(/"/g, '')}</li>`)
-                .join('');
+            
+            let items;
+            if (Array.isArray(dataObj)) {
+                items = dataObj.map(value => `<li>${value}</li>`).join('');
+            } else {
+                items = Object.entries(dataObj)
+                    .map(([key, value]) => `<li><strong>${key}:</strong> ${Array.isArray(value) ? value.join(', ') : JSON.stringify(value).replace(/"/g, '')}</li>`)
+                    .join('');
+            }
             return `<div class="result-block"><h3>${title}</h3><ul>${items}</ul></div>`;
         };
         
@@ -225,8 +232,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="confidence"><strong>โมเดล:</strong> ${prediction_output.METHOD || 'N/A'}</div>
             </div>`;
 
+        // Generate HTML for alternative predictions if they exist
+        const alternativesHtml = prediction_output['ทางเลือกอื่นๆ'] ? 
+            createListHtml('🎲 ทางเลือกอื่นๆ', prediction_output['ทางเลือกอื่นๆ']) : '';
+
         elements.analysisResultsContainer.innerHTML = [
             predictionHtml,
+            alternativesHtml, // Add alternatives right after the main prediction
             createListHtml('📊 สรุปสถิติ', statistical_summary),
             createListHtml('🧩 การวิเคราะห์รูปแบบ', pattern_analysis),
             createParagraphHtml('📝 คำอธิบายโดยละเอียด', detailed_explanation)

@@ -17,21 +17,16 @@ pub fn run_analysis(req: &AnalyzeRequest) -> Result<AnalysisResponse> {
     }
 }
 
-// --- Method 1: Statistical Analysis (Optimized) ---
+// --- Method 1: Statistical Analysis (UPDATED) ---
 fn run_comprehensive_analysis(numbers_str: &[String]) -> Result<AnalysisResponse> {
     if numbers_str.len() < 10 {
         return Err(anyhow!("ข้อมูลไม่เพียงพอ AI ต้องการชุดตัวเลขอย่างน้อย 10 ชุด แต่พบเพียง {}.", numbers_str.len()));
     }
 
-    // --- PERFORMANCE OPTIMIZATION ---
-    // Calculate all statistics in a single pass to avoid multiple iterations.
-    let mut sum = 0.0;
     let mut counts = HashMap::new();
-    let mut numbers_f64 = Vec::with_capacity(numbers_str.len());
-
+    let mut numbers_f64 = Vec::new();
     for s in numbers_str {
         if let Ok(num) = s.parse::<f64>() {
-            sum += num;
             numbers_f64.push(num);
         }
         *counts.entry(s.clone()).or_insert(0) += 1;
@@ -40,43 +35,42 @@ fn run_comprehensive_analysis(numbers_str: &[String]) -> Result<AnalysisResponse
     if numbers_f64.len() < 5 {
         return Err(anyhow!("ไม่สามารถแยกวิเคราะห์ตัวเลขที่ถูกต้องเพียงพอสำหรับการวิเคราะห์ทางสถิติ"));
     }
-    
-    // Sort once for Median, Min, and Max.
+
     numbers_f64.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
 
-    let mean = sum / (numbers_f64.len() as f64);
+    let mean = numbers_f64.iter().sum::<f64>() / (numbers_f64.len() as f64);
     let median = numbers_f64[numbers_f64.len() / 2];
-    
     let min = *numbers_f64.first().unwrap_or(&0.0);
     let max = *numbers_f64.last().unwrap_or(&0.0);
-    
-    // Calculate variance and standard deviation
     let variance = numbers_f64.iter().map(|&val| (val - mean).powi(2)).sum::<f64>() / (numbers_f64.len() as f64);
     let std_dev = variance.sqrt();
-    
-    let mode_str = counts
-        .iter()
-        .max_by_key(|&(_, count)| count)
-        .map(|(val, _)| val.clone())
-        .unwrap_or_else(|| "N/A".to_string());
+
+    let mut sorted_counts: Vec<_> = counts.into_iter().collect();
+    sorted_counts.sort_by(|a, b| b.1.cmp(&a.1));
+
+    let top_prediction = sorted_counts.first().map(|(val, _)| val.clone()).unwrap_or_else(|| "N/A".to_string());
+
+    let mut prediction_output = HashMap::new();
+    prediction_output.insert("PREDICTION".to_string(), serde_json::json!(top_prediction));
+    prediction_output.insert("METHOD".to_string(), serde_json::json!("ฐานนิยมทางสถิติ"));
+
+    let alternatives: Vec<String> = sorted_counts.iter().skip(1).take(4).map(|(val, _)| val.clone()).collect();
+    if !alternatives.is_empty() {
+        prediction_output.insert("ทางเลือกอื่นๆ".to_string(), serde_json::json!(alternatives));
+    }
 
     let statistical_summary = HashMap::from([
         ("ขนาดชุดข้อมูล".to_string(), numbers_str.len().to_string()),
         ("ค่าเฉลี่ย".to_string(), format!("{:.2}", mean)),
         ("มัธยฐาน".to_string(), format!("{:.2}", median)),
-        ("ฐานนิยม".to_string(), mode_str.clone()),
+        ("ฐานนิยม (พบบ่อยที่สุด)".to_string(), top_prediction.clone()),
         ("ส่วนเบี่ยงเบนมาตรฐาน".to_string(), format!("{:.2}", std_dev)),
         ("พิสัย".to_string(), format!("{} - {}", min, max)),
     ]);
-
-    let prediction_output = HashMap::from([
-        ("PREDICTION".to_string(), serde_json::json!(mode_str.clone())),
-        ("METHOD".to_string(), serde_json::json!("ฐานนิยมทางสถิติ")),
-    ]);
-
+    
     let detailed_explanation = HashMap::from([
-        ("หลักการ".to_string(), "โมเดลนี้ใช้การวิเคราะห์ความถี่ (Frequency Analysis) โดยการทำนายคือ 'ฐานนิยม' (ตัวเลขที่เกิดขึ้นบ่อยที่สุด) เนื่องจากเป็นตัวบ่งชี้ทางสถิติที่แข็งแกร่งของการเกิดซ้ำ".to_string()),
-        ("ตรรกะการทำนาย".to_string(), format!("ตัวเลข '{}' ปรากฏบ่อยที่สุดในข้อมูลย้อนหลังที่ให้มา", mode_str)),
+        ("หลักการ".to_string(), "โมเดลนี้ใช้การวิเคราะห์ความถี่ (Frequency Analysis) โดยการทำนายคือ 'ฐานนิยม' (ตัวเลขที่เกิดขึ้นบ่อยที่สุด) และแสดงตัวเลขที่มีความถี่รองลงมาเป็นทางเลือก".to_string()),
+        ("ตรรกะการทำนาย".to_string(), format!("ตัวเลข '{}' ปรากฏบ่อยที่สุดในข้อมูลย้อนหลังที่ให้มา", top_prediction)),
     ]);
 
     Ok(AnalysisResponse {
@@ -87,7 +81,7 @@ fn run_comprehensive_analysis(numbers_str: &[String]) -> Result<AnalysisResponse
     })
 }
 
-// --- Method 2: Numerology (Digital Root) ---
+// --- Method 2: Numerology (Digital Root) (UPDATED) ---
 fn calculate_digital_root(number_str: &str) -> u32 {
     let mut sum: u32 = number_str.chars().filter_map(|c| c.to_digit(10)).sum();
     while sum > 9 {
@@ -104,12 +98,27 @@ fn run_numerology_analysis(numbers_str: &[String]) -> Result<AnalysisResponse> {
         *root_counts.entry(calculate_digital_root(num_str)).or_insert(0) += 1;
     }
 
-    let most_common_root = root_counts.iter().max_by_key(|&(_, count)| count)
-        .map(|(root, _)| *root).unwrap_or(0);
+    let mut sorted_roots: Vec<_> = root_counts.iter().collect();
+    sorted_roots.sort_by(|a, b| b.1.cmp(a.1));
 
+    let most_common_root = sorted_roots.first().map(|(&root, _)| root).unwrap_or(0);
     let prediction = numbers_str.iter().rev()
         .find(|n| calculate_digital_root(n) == most_common_root)
         .cloned().unwrap_or_else(|| "N/A".to_string());
+
+    let mut prediction_output = HashMap::new();
+    prediction_output.insert("PREDICTION".to_string(), serde_json::json!(prediction.clone()));
+    prediction_output.insert("METHOD".to_string(), serde_json::json!("การวิเคราะห์ Digital Root"));
+
+    let alternatives: Vec<String> = sorted_roots.iter().skip(1).take(4)
+        .filter_map(|(root, _)| {
+            numbers_str.iter().rev().find(|n| calculate_digital_root(n) == **root).cloned()
+        })
+        .collect();
+
+    if !alternatives.is_empty() {
+        prediction_output.insert("ทางเลือกอื่นๆ".to_string(), serde_json::json!(alternatives));
+    }
 
     Ok(AnalysisResponse {
         statistical_summary: HashMap::from([
@@ -117,11 +126,10 @@ fn run_numerology_analysis(numbers_str: &[String]) -> Result<AnalysisResponse> {
             ("รากที่พบบ่อยที่สุด".to_string(), most_common_root.to_string()),
         ]),
         pattern_analysis: HashMap::from([("ความถี่ของ Digital Root".to_string(), serde_json::json!(root_counts))]),
-        prediction_output: HashMap::from([
-            ("PREDICTION".to_string(), serde_json::json!(prediction)),
-            ("METHOD".to_string(), serde_json::json!("การวิเคราะห์ Digital Root")),
+        prediction_output,
+        detailed_explanation: HashMap::from([
+            ("หลักการ".to_string(), "การวิเคราะห์นี้คำนวณ 'digital root' (ผลรวมเลขหลักเดียว) ของแต่ละตัวเลข การทำนายคือตัวเลขล่าสุดที่ตรงกับ digital root ที่พบบ่อยที่สุด และแสดงตัวเลขทางเลือกจากรากที่พบบ่อยรองลงมา".to_string())
         ]),
-        detailed_explanation: HashMap::from([("หลักการ".to_string(), "การวิเคราะห์นี้จะคำนวณ 'digital root' (ผลรวมเลขหลักเดียว) ของแต่ละตัวเลข การทำนายคือตัวเลขล่าสุดในอดีตที่ตรงกับ digital root ที่พบบ่อยที่สุด".to_string())]),
     })
 }
 
@@ -166,13 +174,15 @@ fn run_ml_analysis(numbers_str: &[String]) -> Result<AnalysisResponse> {
             ("PREDICTION".to_string(), serde_json::json!(format!("ตัวเลขใดๆ ที่ลงท้ายด้วย '{}'", predicted_last_digit[0]))),
             ("METHOD".to_string(), serde_json::json!("แมชชีนเลิร์นนิง (Decision Tree)")),
         ]),
-        detailed_explanation: HashMap::from([("หลักการ".to_string(), "โมเดล Decision Tree ได้รับการฝึกฝนเพื่อทำนายตัวเลขสุดท้ายของหมายเลขถัดไปโดยพิจารณาจากตัวเลขของหมายเลขก่อนหน้า มันเรียนรู้รูปแบบจากการเปลี่ยนแปลงในอดีต".to_string())]),
+        detailed_explanation: HashMap::from([("หลักการ".to_string(), "โมเดล Decision Tree ได้รับการฝึกฝนเพื่อทำนาย 'เลขท้าย' ของหมายเลขถัดไปโดยพิจารณาจากเลขของหมายเลขก่อนหน้า เนื่องจากลักษณะของโมเดลนี้จะให้ผลลัพธ์ที่ชัดเจนตามกฎที่เรียนรู้มา จึงไม่มีการแสดง 'ทางเลือกอื่น' เหมือนโมเดลเชิงสถิติ".to_string())]),
     })
 }
 
 // --- Method 4: Markov Chain ---
 fn run_markov_chain_analysis(numbers_str: &[String]) -> Result<AnalysisResponse> {
-    if numbers_str.len() < 2 { return Err(anyhow!("การวิเคราะห์แบบมาร์คอฟเชนต้องการข้อมูลอย่างน้อย 2 จุดข้อมูล")); }
+    if numbers_str.len() < 2 {
+        return Err(anyhow!("การวิเคราะห์แบบมาร์คอฟเชนต้องการข้อมูลอย่างน้อย 2 จุดข้อมูล"));
+    }
 
     let mut transitions: HashMap<String, HashMap<String, u32>> = HashMap::new();
     for window in numbers_str.windows(2) {
@@ -180,17 +190,34 @@ fn run_markov_chain_analysis(numbers_str: &[String]) -> Result<AnalysisResponse>
     }
 
     let last_number = numbers_str.last().unwrap();
-    let prediction = transitions.get(last_number).and_then(|possible_next| {
-        possible_next.iter().max_by_key(|&(_, count)| count).map(|(num, _)| num.clone())
-    }).unwrap_or_else(|| "ไม่พบการเปลี่ยนแปลงในอดีต".to_string());
+    let mut prediction_output = HashMap::new();
+
+    if let Some(possible_next) = transitions.get(last_number) {
+        let mut sorted_options: Vec<_> = possible_next.iter().collect();
+        sorted_options.sort_by(|a, b| b.1.cmp(a.1));
+
+        if let Some((top_prediction, _)) = sorted_options.first() {
+            prediction_output.insert("PREDICTION".to_string(), serde_json::json!(top_prediction.to_string()));
+            
+            let alternatives: Vec<String> = sorted_options.iter().skip(1).take(4).map(|(s, _)| s.to_string()).collect();
+            if !alternatives.is_empty() {
+                prediction_output.insert("ทางเลือกอื่นๆ".to_string(), serde_json::json!(alternatives));
+            }
+        } else {
+             prediction_output.insert("PREDICTION".to_string(), serde_json::json!("ไม่พบการเปลี่ยนแปลงในอดีต"));
+        }
+    } else {
+        prediction_output.insert("PREDICTION".to_string(), serde_json::json!("ไม่พบการเปลี่ยนแปลงในอดีตสำหรับเลขตัวล่าสุด"));
+    }
     
+    prediction_output.insert("METHOD".to_string(), serde_json::json!("การวิเคราะห์แบบมาร์คอฟเชน"));
+
     Ok(AnalysisResponse {
         statistical_summary: HashMap::from([("จำนวนสถานะ (ตัวเลขที่ไม่ซ้ำกัน)".to_string(), transitions.len().to_string())]),
         pattern_analysis: HashMap::new(), // Pattern is implicit in the prediction
-        prediction_output: HashMap::from([
-            ("PREDICTION".to_string(), serde_json::json!(prediction)),
-            ("METHOD".to_string(), serde_json::json!("การวิเคราะห์แบบมาร์คอฟเชน")),
+        prediction_output,
+        detailed_explanation: HashMap::from([
+            ("หลักการ".to_string(), format!("การวิเคราะห์นี้จะคำนวณความน่าจะเป็นในอดีตของการเปลี่ยนจากตัวเลขหนึ่งไปยังตัวเลขถัดไป การทำนายคือตัวเลขที่ตามหลัง '{}' บ่อยที่สุดในอดีต และแสดงทางเลือกอื่นๆ ที่มีความเป็นไปได้รองลงมา", last_number))
         ]),
-        detailed_explanation: HashMap::from([("หลักการ".to_string(), format!("การวิเคราะห์นี้จะคำนวณความน่าจะเป็นในอดีตของการเปลี่ยนจากตัวเลขหนึ่งไปยังตัวเลขถัดไป การทำนายคือตัวเลขที่ตามหลัง '{}' บ่อยที่สุดในอดีต", last_number))]),
     })
 }
